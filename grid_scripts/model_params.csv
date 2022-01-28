@@ -1,0 +1,2 @@
+expDate,mdl_name,path_model_save_base,name_datasetFile,path_existing_mdl,thresh_rr,temp_width,pr_temporal_width,bz_ms,nc_epochs,chan1_n,filt1_size,filt1_3rdDim,chan2_n,filt2_size,filt2_3rdDim,chan3_n,filt3_size,filt3_3rdDim,BatchNorm,MaxPool,num_trials,USE_CHUNKER,TRSAMPS
+retina1,CNN_2D,/home/sidrees/scratch/RetinaPredictors/data/retina1/8ms/photopic,/home/sidrees/scratch/RetinaPredictors/data/retina1/8ms/datasets/retina1_dataset_train_val_test_photopic.h5,0,0,120,0,2000,300,20,3,0,24,2,0,22,1,0,0,0,1,0,0
