@@ -37,7 +37,7 @@ def chunker(data,batch_size,mode='default'):
                 yield (X[cbatch:(cbatch + batch_size)], y[cbatch:(cbatch + batch_size)])
     
  
-def train(mdl, data_train, data_val,fname_excel,path_model_base, fname_model, bz=588, nb_epochs=200, validation_batch_size=5000,validation_freq=10,USE_CHUNKER=0,initial_epoch=1,lr=0.01):
+def train(mdl, data_train, data_val,fname_excel,path_model_base, fname_model, bz=588, nb_epochs=200, validation_batch_size=5000,validation_freq=10,USE_CHUNKER=0,initial_epoch=1,lr=0.001):
     # lr = (1e-2)/10
 
     # mdl.compile(loss='mean_squared_error', optimizer=Adam(lr), metrics=[metrics.cc, metrics.rmse, metrics.fev])
