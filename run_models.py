@@ -100,7 +100,7 @@ def run_model(expDate,mdl_name,path_model_save_base,fname_data_train_val_test,pa
     
     
 # load train val and test datasets from saved h5 file
-    data_train,data_val,data_test,data_quality,dataset_rr,parameters,_ = load_h5Dataset(fname_data_train_val_test,nsamps_val=validationSamps_dur,nsamps_train=trainingSamps_dur,LOAD_ALL_TR=False)
+    data_train,data_val,data_test,data_quality,dataset_rr,parameters,_ = load_h5Dataset(fname_data_train_val_test,nsamps_val=validationSamps_dur,nsamps_train=trainingSamps_dur,LOAD_ALL_TR=True)
     t_frame = parameters['t_frame']
     
     
