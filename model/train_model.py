@@ -42,7 +42,6 @@ class CustomCallback(keras.callbacks.Callback):
         
         print("LR - {}".format(self.model.optimizer.learning_rate))
 
-# my_callbacks = [ CustomCallback() ]
  
 def train(mdl, data_train, data_val,fname_excel,path_model_base, fname_model, bz=588, nb_epochs=200, validation_batch_size=5000,validation_freq=10,USE_CHUNKER=0,initial_epoch=1,lr=0.001):
     # lr = (1e-2)/10
