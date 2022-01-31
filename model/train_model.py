@@ -64,9 +64,8 @@ def train(mdl, data_train, data_val,fname_excel,path_model_base, fname_model, bz
     fname_cb = 'weights_'+ fname_model + '_epoch-{epoch:03d}' 
     cbs = [cb.ModelCheckpoint(os.path.join(path_model_base, fname_cb),save_weights_only=True),
            cb.TensorBoard(log_dir=path_model_base, histogram_freq=0, write_grads=False),
-           cb.ReduceLROnPlateau(min_lr=0, factor=0.2, patience=10),
            cb.CSVLogger(os.path.join(path_model_base, fname_excel)),
-           CustomCallback()]
+           CustomCallback()] #cb.ReduceLROnPlateau(min_lr=0, factor=0.2, patience=10),
    
 
     if USE_CHUNKER==0:
