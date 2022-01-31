@@ -208,10 +208,10 @@ def run_model(expDate,mdl_name,path_model_save_base,fname_data_train_val_test,pa
 
     elif mdl_name=='PRFR_CNN2D':
         mdl = prfr_cnn2d(x, n_cells, filt_temporal_width = temporal_width, chan1_n=chan1_n, filt1_size=filt1_size, chan2_n=chan2_n, filt2_size=filt2_size, chan3_n=chan3_n, filt3_size=filt3_size, BatchNorm=BatchNorm,MaxPool=MaxPool,BatchNorm_train = BatchNorm_train)
-        fname_model = 'U-%0.2f_P-%03d_T-%03d_C1-%02d-%02d_C2-%02d-%02d_C3-%02d-%02d_BN-%d_MP-%d_TR-%02d' %(thresh_rr,pr_temporal_width,temporal_width,chan1_n,filt1_size,
+        fname_model = 'U-%0.2f_P-%03d_T-%03d_C1-%02d-%02d_C2-%02d-%02d_C3-%02d-%02d_BN-%d_MP-%d_LR-%0.4f_TR-%02d' %(thresh_rr,pr_temporal_width,temporal_width,chan1_n,filt1_size,
                                                                                      chan2_n,filt2_size,
                                                                                      chan3_n,filt3_size,
-                                                                                     bn_val,mp_val,c_trial)
+                                                                                     bn_val,mp_val,lr,c_trial)
         filt1_3rdDim=0
         filt2_3rdDim=0
         filt3_3rdDim=0
