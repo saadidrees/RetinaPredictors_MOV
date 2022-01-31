@@ -15,7 +15,7 @@ from tensorflow.keras.optimizers import Adam
 import model.metrics as metrics
 import numpy as np
 import re
-
+from tensorflow import keras
 
 def chunker(data,batch_size,mode='default'):
     if mode=='predict': # in predict mode no need to do y
@@ -36,6 +36,13 @@ def chunker(data,batch_size,mode='default'):
             for cbatch in range(0, X.shape[0], batch_size):
                 yield (X[cbatch:(cbatch + batch_size)], y[cbatch:(cbatch + batch_size)])
     
+class CustomCallback(keras.callbacks.Callback):
+
+    def on_epoch_end(self, epoch, logs=None):
+        
+        print("LR - {}".format(self.model.optimizer.learning_rate))
+
+# my_callbacks = [ CustomCallback() ]
  
 def train(mdl, data_train, data_val,fname_excel,path_model_base, fname_model, bz=588, nb_epochs=200, validation_batch_size=5000,validation_freq=10,USE_CHUNKER=0,initial_epoch=1,lr=0.001):
     # lr = (1e-2)/10
@@ -58,7 +65,8 @@ def train(mdl, data_train, data_val,fname_excel,path_model_base, fname_model, bz
     cbs = [cb.ModelCheckpoint(os.path.join(path_model_base, fname_cb),save_weights_only=True),
            cb.TensorBoard(log_dir=path_model_base, histogram_freq=0, write_grads=False),
            cb.ReduceLROnPlateau(min_lr=0, factor=0.2, patience=10),
-           cb.CSVLogger(os.path.join(path_model_base, fname_excel))]
+           cb.CSVLogger(os.path.join(path_model_base, fname_excel)),
+           CustomCallback()]
    
 
     if USE_CHUNKER==0:

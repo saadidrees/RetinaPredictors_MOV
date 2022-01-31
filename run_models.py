@@ -23,7 +23,7 @@ def run_model(expDate,mdl_name,path_model_save_base,fname_data_train_val_test,pa
                             lr=0.01,USE_CHUNKER=0,CONTINUE_TRAINING=0,info='',
                             path_dataset_base='/home/saad/data/analyses/data_kiersten'):
 
-         
+          
 # %% prepare data
     
     if chan2_n == 0:
@@ -337,7 +337,7 @@ def run_model(expDate,mdl_name,path_model_save_base,fname_data_train_val_test,pa
 
     print('-----RUNNING MODEL-----')
     validation_batch_size = 600#bz #data_val.X.shape[0]
-    mdl_history = train(mdl, data_train, data_val, fname_excel,path_model_save, fname_model, bz=bz, nb_epochs=nb_epochs,validation_batch_size=validation_batch_size,validation_freq=50,USE_CHUNKER=USE_CHUNKER,initial_epoch=initial_epoch,lr=lr)  
+    mdl_history = train(mdl, data_train, data_val, fname_excel,path_model_save, fname_model, bz=bz, nb_epochs=nb_epochs,validation_batch_size=validation_batch_size,validation_freq=500,USE_CHUNKER=USE_CHUNKER,initial_epoch=initial_epoch,lr=lr)  
     mdl_history = mdl_history.history
     
     # %% Model Evaluation
