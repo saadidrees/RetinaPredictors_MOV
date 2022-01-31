@@ -39,6 +39,7 @@ def parser_run_model():
     parser.add_argument('--trainingSamps_dur',type=int,default=0)
     parser.add_argument('--CONTINUE_TRAINING',type=int,default=0)
     parser.add_argument('--info',type=str,default='')
+    parser.add_argument('--lr',type=int,default=0.01)
     
 
     args = parser.parse_args()
