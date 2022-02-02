@@ -9,6 +9,7 @@ from functools import wraps
 import tensorflow as tf
 import tensorflow.keras.backend as K
 import numpy as np
+import sys
 
 __all__ = ['cc', 'rmse', 'fev', 'CC', 'RMSE', 'FEV', 'np_wrap',
            'root_mean_squared_error', 'correlation_coefficient',
@@ -26,7 +27,8 @@ __all__ = ['cc', 'rmse', 'fev', 'CC', 'RMSE', 'FEV', 'np_wrap',
 
 def correlation_coefficient(obs_rate, est_rate):    # (y_true, y_pred)
     """Pearson correlation coefficient"""
-    
+    obs_rate = obs_rate + 0.001 #sys.float_info.epsilon
+    est_rate = est_rate + 0.001 #sys.float_info.epsilon
     x_mu = obs_rate - tf.experimental.numpy.nanmean(obs_rate, axis=0, keepdims=True)
     x_std = K.std(obs_rate, axis=0, keepdims=True)
     y_mu = est_rate - tf.experimental.numpy.nanmean(est_rate, axis=0, keepdims=True)
@@ -53,6 +55,9 @@ def fraction_of_explained_variance(obs_rate, est_rate):
 
     https://wikipedia.org/en/Fraction_of_variance_unexplained
     """
+    obs_rate = obs_rate + sys.float_info.epsilon
+    est_rate = est_rate + sys.float_info.epsilon
+    
     return 1.0 - mean_squared_error(obs_rate, est_rate) / K.var(obs_rate, axis=0, keepdims=True)
 
 # def fraction_of_explained_variance(obs_rate, est_rate):

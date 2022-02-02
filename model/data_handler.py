@@ -74,7 +74,7 @@ def rolling_window(array, window, time_axis=0):
     else:
         # arr = arr[:,np.newaxis,:,:]
         return array
-                
+                 
 def unroll_data(data,time_axis=0,rolled_axis=1):
     rgb = data[0]
     rgb = np.concatenate((rgb,data[1:,data.shape[1]-1,:]),axis=0)
@@ -719,7 +719,7 @@ def load_h5Dataset(fname,LOAD_TR=True,LOAD_VAL=True,LOAD_ALL_TR=False,nsamps_val
         
         
     if nsamps_train==-1 or nsamps_train==0 :
-        idx_train_start = 0
+        idx_train_start = 2000
         idx_train_end = -1
     else:
         LOAD_ALL_TR = False

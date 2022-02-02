@@ -382,7 +382,7 @@ def run_model(expDate,mdl_name,path_model_save_base,fname_data_train_val_test,pa
         samps_shift = 0
 
 
-    check_trainVal_contamination(data_train.X,data_val.X,temporal_width)
+    # check_trainVal_contamination(data_train.X,data_val.X,temporal_width)
     
     print('-----EVALUATING PERFORMANCE-----')
     for i in range(0,nb_epochs-1):
@@ -498,19 +498,19 @@ def run_model(expDate,mdl_name,path_model_save_base,fname_data_train_val_test,pa
         # 'val_dataset_name': dataset_rr['stim_0']['dataset_name'],
         }
     
-    if mdl_name[:2] == 'PR':
-        weights = mdl.get_weights()
-        model_performance['pr_alpha'] = weights[0]
-        model_performance['pr_beta'] = weights[1]
-        model_performance['pr_gamma'] = weights[2]
-        model_performance['pr_tauY'] = weights[3]
-        model_performance['pr_tauZ'] = weights[4]
-        model_performance['pr_nY'] = weights[5]
-        model_performance['pr_nZ'] = weights[6]
-        model_performance['pr_tauY_mulFac'] = weights[7]
-        model_performance['pr_tauZ_mulFac'] = weights[8]
-        model_performance['pr_nY_mulFac'] = weights[9]
-        model_performance['pr_nZ_mulFac'] = weights[10]
+    # if mdl_name[:2] == 'PR':
+    #     weights = mdl.get_weights()
+    #     model_performance['pr_alpha'] = weights[0]
+    #     model_performance['pr_beta'] = weights[1]
+    #     model_performance['pr_gamma'] = weights[2]
+    #     model_performance['pr_tauY'] = weights[3]
+    #     model_performance['pr_tauZ'] = weights[4]
+    #     model_performance['pr_nY'] = weights[5]
+    #     model_performance['pr_nZ'] = weights[6]
+    #     model_performance['pr_tauY_mulFac'] = weights[7]
+    #     model_performance['pr_tauZ_mulFac'] = weights[8]
+    #     model_performance['pr_nY_mulFac'] = weights[9]
+    #     model_performance['pr_nZ_mulFac'] = weights[10]
     
 
     metaInfo = {

@@ -57,6 +57,7 @@ def train(mdl, data_train, data_val,fname_excel,path_model_base, fname_model, bz
             mdl.load_weights(os.path.join(path_model_base,weight_file))
             
     mdl.compile(loss='poisson', optimizer=Adam(lr), metrics=[metrics.cc, metrics.rmse, metrics.fev],experimental_run_tf_function=False)
+    # mdl.compile(loss='mean_squared_error', optimizer=Adam(lr), metrics=[metrics.cc, metrics.rmse, metrics.fev],experimental_run_tf_function=False)
 
 
     # define model callbacks
@@ -64,7 +65,7 @@ def train(mdl, data_train, data_val,fname_excel,path_model_base, fname_model, bz
     cbs = [cb.ModelCheckpoint(os.path.join(path_model_base, fname_cb),save_weights_only=True),
            cb.TensorBoard(log_dir=path_model_base, histogram_freq=0, write_grads=False),
            cb.CSVLogger(os.path.join(path_model_base, fname_excel)),
-           cb.ReduceLROnPlateau(monitor='loss',min_lr=1e-6, factor=0.2, patience=5),
+           cb.ReduceLROnPlateau(monitor='loss',min_lr=1e-6, factor=0.2, patience=2),
            CustomCallback()] #
    
 
