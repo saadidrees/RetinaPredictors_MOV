@@ -621,11 +621,26 @@ def save_h5Dataset(fname,data_train,data_val,data_test,data_quality,dataset_rr,p
         else:
             grp.create_dataset(keys[i], data=data_quality[keys[i]])
             
+            
     if type(data_train) is dict:    # if the training set is divided into multiple datasets then create a group for each
-        for i in data_train.keys():
-            grp = f.create_group('/'+i)
-            grp.create_dataset('X',data=data_train[i].X,compression='gzip')
-            grp.create_dataset('y',data=data_train[i].y,compression='gzip')
+        data_train_keys = list(data_train.keys())
+        grp = f.create_group('/data_train')
+        grp.create_dataset('X',data=data_train[data_train_keys[0]].X,compression='gzip',chunks=True,maxshape=(None,data_train[data_train_keys[0]].X.shape[-2],data_train[data_train_keys[0]].X.shape[-1]))
+        grp.create_dataset('y',data=data_train[data_train_keys[0]].y,compression='gzip',chunks=True,maxshape=(None,data_train[data_train_keys[0]].y.shape[-1]))
+
+        for i in range(1,len(data_train_keys)):
+            f['data_train']['X'].resize((f['data_train']['X'].shape[0] + data_train[data_train_keys[i]].X.shape[0]),axis=0)
+            f['data_train']['X'][-data_train[data_train_keys[i]].X.shape[0]:] = data_train[data_train_keys[i]].X
+            
+            f['data_train']['y'].resize((f['data_train']['y'].shape[0] + data_train[data_train_keys[i]].y.shape[0]),axis=0)
+            f['data_train']['y'][-data_train[data_train_keys[i]].y.shape[0]:] = data_train[data_train_keys[i]].y
+
+
+    # if type(data_train) is dict:    # if the training set is divided into multiple datasets then create a group for each
+    #     for i in data_train.keys():
+    #         grp = f.create_group('/'+i)
+    #         grp.create_dataset('X',data=data_train[i].X,compression='gzip')
+    #         grp.create_dataset('y',data=data_train[i].y,compression='gzip')
             
     else:
         grp = f.create_group('/data_train')
@@ -634,10 +649,17 @@ def save_h5Dataset(fname,data_train,data_val,data_test,data_quality,dataset_rr,p
     
     
     if type(data_val)==dict: # if the training set is divided into multiple datasets
-        for i in data_val.keys():
-            grp = f.create_group('/'+i)
-            grp.create_dataset('X',data=data_val[i].X,compression='gzip')
-            grp.create_dataset('y',data=data_val[i].y,compression='gzip')
+        data_val_keys = list(data_val.keys())
+        grp = f.create_group('/data_val')
+        grp.create_dataset('X',data=data_val[data_val_keys[0]].X,compression='gzip',chunks=True,maxshape=(None,data_val[data_val_keys[0]].X.shape[-2],data_val[data_val_keys[0]].X.shape[-1]))
+        grp.create_dataset('y',data=data_val[data_val_keys[0]].y,compression='gzip',chunks=True,maxshape=(None,data_val[data_val_keys[0]].y.shape[-1]))
+
+        for i in range(1,len(data_val_keys)):
+            f['data_val']['X'].resize((f['data_val']['X'].shape[0] + data_val[data_val_keys[i]].X.shape[0]),axis=0)
+            f['data_val']['X'][-data_val[data_val_keys[i]].X.shape[0]:] = data_val[data_val_keys[i]].X
+            
+            f['data_val']['y'].resize((f['data_val']['y'].shape[0] + data_val[data_val_keys[i]].y.shape[0]),axis=0)
+            f['data_val']['y'][-data_val[data_val_keys[i]].y.shape[0]:] = data_val[data_val_keys[i]].y
     else:
         grp = f.create_group('/data_val')
         grp.create_dataset('X',data=data_val.X,compression='gzip')
