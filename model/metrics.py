@@ -30,9 +30,9 @@ def correlation_coefficient(obs_rate, est_rate):    # (y_true, y_pred)
     obs_rate = obs_rate + 0.001 #sys.float_info.epsilon
     est_rate = est_rate + 0.001 #sys.float_info.epsilon
     x_mu = obs_rate - tf.experimental.numpy.nanmean(obs_rate, axis=0, keepdims=True)
-    x_std = K.std(obs_rate, axis=0, keepdims=True)
+    x_std = tf.experimental.numpy.sqrt(tf.experimental.numpy.nansum(x_mu**2,axis=0)/tf.cast(tf.shape(obs_rate)[0],'float32')) # x_std = K.std(obs_rate, axis=0, keepdims=True)    
     y_mu = est_rate - tf.experimental.numpy.nanmean(est_rate, axis=0, keepdims=True)
-    y_std = K.std(est_rate, axis=0, keepdims=True)
+    y_std = tf.experimental.numpy.sqrt(tf.experimental.numpy.nansum(y_mu**2,axis=0)/tf.cast(tf.shape(est_rate)[0],'float32'))    # y_std = K.std(est_rate, axis=0, keepdims=True)
     return tf.experimental.numpy.nanmean(x_mu * y_mu, axis=0, keepdims=True) / (x_std * y_std)
 
 
