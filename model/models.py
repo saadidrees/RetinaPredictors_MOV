@@ -53,6 +53,13 @@ class Normalize(tf.keras.layers.Layer):
     def __init__(self,units=1):
         super(Normalize,self).__init__()
         self.units = units
+        
+    def get_config(self):
+         config = super().get_config()
+         config.update({
+             "units": self.units,
+         })
+         return config   
              
     def call(self,inputs):
         value_min = tf.math.reduce_min(inputs)
@@ -186,6 +193,13 @@ class photoreceptor_REIKE(tf.keras.layers.Layer):
     def __init__(self,units=1):
         super(photoreceptor_REIKE,self).__init__()
         self.units = units
+        
+    def get_config(self):
+        config = super().get_config()
+        config.update({
+            'units': self.units,
+        })
+        return config
 
     def build(self,input_shape):
         sigma_init = tf.keras.initializers.Constant(1.) # 22
@@ -208,10 +222,10 @@ class photoreceptor_REIKE(tf.keras.layers.Layer):
         beta_scaleFac = tf.keras.initializers.Constant(10.) 
         self.beta_scaleFac = tf.Variable(name='beta_scaleFac',initial_value=beta_scaleFac(shape=(1,self.units),dtype='float32'),trainable=False)
 
-        cgmp2cur_init = tf.keras.initializers.Constant(0.01)  # 0.01
+        cgmp2cur_init = tf.keras.initializers.Constant(1) # 0.01
         self.cgmp2cur = tf.Variable(name='cgmp2cur',initial_value=cgmp2cur_init(shape=(1,self.units),dtype='float32'),trainable=True)
         
-        cgmphill_init = tf.keras.initializers.Constant(3.)  # 3
+        cgmphill_init = tf.keras.initializers.Constant(1.)  # 3
         self.cgmphill = tf.Variable(name='cgmphill',initial_value=cgmphill_init(shape=(1,self.units),dtype='float32'),trainable=True)
         cgmphill_scaleFac = tf.keras.initializers.Constant(1.) 
         self.cgmphill_scaleFac = tf.Variable(name='cgmphill_scaleFac',initial_value=cgmphill_scaleFac(shape=(1,self.units),dtype='float32'),trainable=False)
@@ -311,7 +325,12 @@ def prfr_cnn2d(inputs,n_out,filt_temporal_width=120,chan1_n=12, filt1_size=13, c
             n2 = int(y.shape[-2])
             y = Reshape((chan2_n, n2, n1))(BatchNormalization(axis=-1)(Flatten()(y)))
             # y = BatchNormalization(axis=1)(y)   
+            
+        # if MaxPool is True:
+        #     y = MaxPool2D(2,data_format='channels_first')(y)
+
         y = Activation('relu')(GaussianNoise(sigma)(y))
+
 
     # CNN - third layer
     if chan3_n>0:
