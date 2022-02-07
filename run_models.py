@@ -344,6 +344,7 @@ def run_model(expDate,mdl_name,path_model_save_base,fname_data_train_val_test,pa
     validation_batch_size = 600#bz #data_val.X.shape[0]
     mdl_history = train(mdl, data_train, data_val, fname_excel,path_model_save, fname_model, bz=bz, nb_epochs=nb_epochs,validation_batch_size=validation_batch_size,validation_freq=500,USE_CHUNKER=USE_CHUNKER,initial_epoch=initial_epoch,lr=lr)  
     mdl_history = mdl_history.history
+    _ = gc.collect()
     
     # %% Model Evaluation
     nb_epochs = np.max([initial_epoch,nb_epochs])
@@ -451,7 +452,7 @@ def run_model(expDate,mdl_name,path_model_save_base,fname_data_train_val_test,pa
     # fname_bestWeight = 'weights_'+fname_model+'_epoch-%03d.h5' % (idx_bestEpoch+1)
     fname_bestWeight = 'weights_'+fname_model+'_epoch-%03d' % (idx_bestEpoch+1)
     mdl.load_weights(os.path.join(path_model_save,fname_bestWeight))
-    pred_rate = mdl.predict(data_val.X)
+    pred_rate = mdl.predict(gen,steps=int(np.ceil(data_val.X.shape[0]/bz)))
     fname_bestWeight = np.array(fname_bestWeight,dtype='bytes')
     
     # plt.plot(obs_rate[:,0])
