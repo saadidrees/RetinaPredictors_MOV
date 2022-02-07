@@ -222,10 +222,10 @@ class photoreceptor_REIKE(tf.keras.layers.Layer):
         beta_scaleFac = tf.keras.initializers.Constant(10.) 
         self.beta_scaleFac = tf.Variable(name='beta_scaleFac',initial_value=beta_scaleFac(shape=(1,self.units),dtype='float32'),trainable=False)
 
-        cgmp2cur_init = tf.keras.initializers.Constant(1) # 0.01
+        cgmp2cur_init = tf.keras.initializers.Constant(0.01) # 0.01
         self.cgmp2cur = tf.Variable(name='cgmp2cur',initial_value=cgmp2cur_init(shape=(1,self.units),dtype='float32'),trainable=True)
         
-        cgmphill_init = tf.keras.initializers.Constant(1.)  # 3
+        cgmphill_init = tf.keras.initializers.Constant(3.)  # 3
         self.cgmphill = tf.Variable(name='cgmphill',initial_value=cgmphill_init(shape=(1,self.units),dtype='float32'),trainable=True)
         cgmphill_scaleFac = tf.keras.initializers.Constant(1.) 
         self.cgmphill_scaleFac = tf.Variable(name='cgmphill_scaleFac',initial_value=cgmphill_scaleFac(shape=(1,self.units),dtype='float32'),trainable=False)
@@ -253,8 +253,8 @@ class photoreceptor_REIKE(tf.keras.layers.Layer):
         gamma_scaleFac = tf.keras.initializers.Constant(10.) 
         self.gamma_scaleFac = tf.Variable(name='gamma_scaleFac',initial_value=gamma_scaleFac(shape=(1,self.units),dtype='float32'),trainable=False)
                 
-        gdark_init = tf.keras.initializers.Constant(28.)    # 28 for cones; 20 for rods 
-        self.gdark = tf.Variable(name='gdark',initial_value=gdark_init(shape=(1,self.units),dtype='float32'),trainable=False)
+        gdark_init = tf.keras.initializers.Constant(0.28)    # 28 for cones; 20 for rods 
+        self.gdark = tf.Variable(name='gdark',initial_value=gdark_init(shape=(1,self.units),dtype='float32'),trainable=True)
         
         self.timeBin = 8 # find a way to fix this in the model  #tf.Variable(name='timeBin',initial_value=timeBin(shape=(1,self.units),dtype='float32'),trainable=False)
 
@@ -282,7 +282,7 @@ class photoreceptor_REIKE(tf.keras.layers.Layer):
         hillcoef = self.hillcoef * self.hillcoef_scaleFac
         hillaffinity = self.hillaffinity * self.hillaffinity_scaleFac
         gamma = (self.gamma*self.gamma_scaleFac)/timeBin
-        gdark = self.gdark
+        gdark = self.gdark*100
         
         
         outputs = riekeModel(X_fun,TimeStep,sigma,phi,eta,cgmp2cur,cgmphill,cdark,beta,betaSlow,hillcoef,hillaffinity,gamma,gdark)
