@@ -20,7 +20,7 @@ def run_model(expDate,mdl_name,path_model_save_base,fname_data_train_val_test,pa
                             pr_temporal_width = 180,
                             nb_epochs=100,bz_ms=10000,trainingSamps_dur=0,validationSamps_dur=1,
                             BatchNorm=1,BatchNorm_train=0,MaxPool=1,c_trial=1,
-                            lr=0.01,USE_CHUNKER=0,CONTINUE_TRAINING=0,info='',
+                            lr=0.01,USE_CHUNKER=0,CONTINUE_TRAINING=1,info='',
                             path_dataset_base='/home/saad/data/analyses/data_kiersten'):
 
           
