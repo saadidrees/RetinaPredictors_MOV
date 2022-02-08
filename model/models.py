@@ -29,7 +29,13 @@ import numpy as np
 
 # from tensorflow.keras import mixed_precision
 # mixed_precision.set_global_policy('mixed_float16')
- 
+
+def model_definitions():
+    models_2D = ('CNN_2D','PRFR_CNN2D','PRFR_CNN2D_MULTIPR','PRFR_CNN2D_fixed','PR_CNN2D','PR_CNN2D_fixed')
+    models_3D = ('CNN_3D','PR_CNN3D')
+    
+    return (models_2D,models_3D)
+
 # % Model definitions - Keras Models
 def generate_simple_filter(tau,n,t):
    f = (t**n)*tf.math.exp(-t/tau) # functional form in paper
@@ -49,6 +55,26 @@ def conv_oper(x,kernel_1D):
     conv_output = tf.nn.depthwise_conv2d(x_reshaped,kernel_reshaped,strides=[1,1,1,1],padding=pad_vec,data_format='NHWC')
     return conv_output
 
+class Normalize_PRFR(tf.keras.layers.Layer):
+    def __init__(self,units=1):
+        super(Normalize_PRFR,self).__init__()
+        self.units = units
+        
+    def get_config(self):
+         config = super().get_config()
+         config.update({
+             "units": self.units,
+         })
+         return config   
+             
+    def call(self,inputs):
+        value_min = -96 #tf.math.reduce_min(inputs)
+        value_max = -83 #tf.math.reduce_max(inputs)
+        R_norm = (inputs - value_min)/(value_max-value_min)
+        R_mean = tf.math.reduce_mean(R_norm)       
+        R_norm = R_norm - R_mean
+        return R_norm
+    
 class Normalize(tf.keras.layers.Layer):
     def __init__(self,units=1):
         super(Normalize,self).__init__()
@@ -68,6 +94,7 @@ class Normalize(tf.keras.layers.Layer):
         R_mean = tf.math.reduce_mean(R_norm)       
         R_norm = R_norm - R_mean
         return R_norm
+
 
 class photoreceptor_DA(tf.keras.layers.Layer):
     def __init__(self,units=1):
@@ -301,7 +328,7 @@ def prfr_cnn2d(inputs,n_out,filt_temporal_width=120,chan1_n=12, filt1_size=13, c
     y = photoreceptor_REIKE(units=1)(y)
     y = Reshape((inputs.shape[1],inputs.shape[-2],inputs.shape[-1]))(y)
     y = y[:,inputs.shape[1]-filt_temporal_width:,:,:]
-    y = Normalize(units=1)(y)
+    y = Normalize_PRFR(units=1)(y)
     
     # CNN - first layer
     y = Conv2D(chan1_n, filt1_size, data_format="channels_first", kernel_regularizer=l2(1e-3),name='CNNs_start')(y)
