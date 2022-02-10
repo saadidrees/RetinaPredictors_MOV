@@ -231,10 +231,10 @@ class photoreceptor_REIKE(tf.keras.layers.Layer):
         self.beta_scaleFac = tf.Variable(name='beta_scaleFac',initial_value=beta_scaleFac(shape=(1,self.units),dtype='float32'),trainable=False)
 
         cgmp2cur_init = tf.keras.initializers.Constant(0.01) # 0.01
-        self.cgmp2cur = tf.Variable(name='cgmp2cur',initial_value=cgmp2cur_init(shape=(1,self.units),dtype='float32'),trainable=True)
+        self.cgmp2cur = tf.Variable(name='cgmp2cur',initial_value=cgmp2cur_init(shape=(1,self.units),dtype='float32'),trainable=False)
         
         cgmphill_init = tf.keras.initializers.Constant(3.)  # 3
-        self.cgmphill = tf.Variable(name='cgmphill',initial_value=cgmphill_init(shape=(1,self.units),dtype='float32'),trainable=True)
+        self.cgmphill = tf.Variable(name='cgmphill',initial_value=cgmphill_init(shape=(1,self.units),dtype='float32'),trainable=False)
         cgmphill_scaleFac = tf.keras.initializers.Constant(1.) 
         self.cgmphill_scaleFac = tf.Variable(name='cgmphill_scaleFac',initial_value=cgmphill_scaleFac(shape=(1,self.units),dtype='float32'),trainable=False)
         
@@ -257,12 +257,12 @@ class photoreceptor_REIKE(tf.keras.layers.Layer):
         self.hillaffinity_scaleFac = tf.Variable(name='hillaffinity_scaleFac',initial_value=hillaffinity_scaleFac(shape=(1,self.units),dtype='float32'),trainable=False)
         
         gamma_init = tf.keras.initializers.Constant(1.)
-        self.gamma = tf.Variable(name='gamma',initial_value=gamma_init(shape=(1,self.units),dtype='float32'),trainable=True)
+        self.gamma = tf.Variable(name='gamma',initial_value=gamma_init(shape=(1,self.units),dtype='float32'),trainable=False)
         gamma_scaleFac = tf.keras.initializers.Constant(10.) 
         self.gamma_scaleFac = tf.Variable(name='gamma_scaleFac',initial_value=gamma_scaleFac(shape=(1,self.units),dtype='float32'),trainable=False)
                 
         gdark_init = tf.keras.initializers.Constant(0.28)    # 28 for cones; 20 for rods 
-        self.gdark = tf.Variable(name='gdark',initial_value=gdark_init(shape=(1,self.units),dtype='float32'),trainable=True)
+        self.gdark = tf.Variable(name='gdark',initial_value=gdark_init(shape=(1,self.units),dtype='float32'),trainable=False)
         
         self.timeBin = 8 # find a way to fix this in the model  #tf.Variable(name='timeBin',initial_value=timeBin(shape=(1,self.units),dtype='float32'),trainable=False)
 
@@ -319,7 +319,6 @@ class Normalize_PRFR(tf.keras.layers.Layer):
         R_mean = 0.54 #tf.math.reduce_mean(R_norm)       
         R_norm = R_norm - R_mean
         return R_norm
-
 
         
 def prfr_cnn2d(inputs,n_out,filt_temporal_width=120,chan1_n=12, filt1_size=13, chan2_n=0, filt2_size=0, chan3_n=0, filt3_size=0, BatchNorm=True, BatchNorm_train=False, MaxPool=False):
