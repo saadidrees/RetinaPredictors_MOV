@@ -36,7 +36,7 @@ def model_definitions():
     
     return (models_2D,models_3D)
 
-# % Model definitions - Keras Models
+# Some functions used in custom Keras models
 def generate_simple_filter(tau,n,t):
    f = (t**n)*tf.math.exp(-t/tau) # functional form in paper
    f = (f/tau**(n+1))/tf.math.exp(tf.math.lgamma(n+1)) # normalize appropriately
@@ -55,25 +55,6 @@ def conv_oper(x,kernel_1D):
     conv_output = tf.nn.depthwise_conv2d(x_reshaped,kernel_reshaped,strides=[1,1,1,1],padding=pad_vec,data_format='NHWC')
     return conv_output
 
-class Normalize_PRFR(tf.keras.layers.Layer):
-    def __init__(self,units=1):
-        super(Normalize_PRFR,self).__init__()
-        self.units = units
-        
-    def get_config(self):
-         config = super().get_config()
-         config.update({
-             "units": self.units,
-         })
-         return config   
-             
-    def call(self,inputs):
-        value_min = -96 #tf.math.reduce_min(inputs)
-        value_max = -83 #tf.math.reduce_max(inputs)
-        R_norm = (inputs - value_min)/(value_max-value_min)
-        R_mean = tf.math.reduce_mean(R_norm)       
-        R_norm = R_norm - R_mean
-        return R_norm
     
 class Normalize(tf.keras.layers.Layer):
     def __init__(self,units=1):
@@ -265,7 +246,7 @@ class photoreceptor_REIKE(tf.keras.layers.Layer):
         betaSlow_scaleFac = tf.keras.initializers.Constant(1.) 
         self.betaSlow_scaleFac = tf.Variable(name='betaSlow_scaleFac',initial_value=betaSlow_scaleFac(shape=(1,self.units),dtype='float32'),trainable=False)
         
-        hillcoef_init = tf.keras.initializers.Constant(1.) #tf.keras.initializers.Constant(1.) # 4
+        hillcoef_init = tf.keras.initializers.Constant(4.) #tf.keras.initializers.Constant(1.) # 4
         self.hillcoef = tf.Variable(name='hillcoef',initial_value=hillcoef_init(shape=(1,self.units),dtype='float32'),trainable=True)
         hillcoef_scaleFac = tf.keras.initializers.Constant(1.) 
         self.hillcoef_scaleFac = tf.Variable(name='hillcoef_scaleFac',initial_value=hillcoef_scaleFac(shape=(1,self.units),dtype='float32'),trainable=False)
@@ -318,6 +299,28 @@ class photoreceptor_REIKE(tf.keras.layers.Layer):
             outputs = outputs[:,upSamp_fac-1::upSamp_fac]
             
         return outputs
+
+class Normalize_PRFR(tf.keras.layers.Layer):
+    def __init__(self,units=1):
+        super(Normalize_PRFR,self).__init__()
+        self.units = units
+        
+    def get_config(self):
+         config = super().get_config()
+         config.update({
+             "units": self.units,
+         })
+         return config   
+             
+    def call(self,inputs):
+        value_min = -103 #tf.math.reduce_min(inputs)
+        value_max = -87 #tf.math.reduce_max(inputs)
+        R_norm = (inputs - value_min)/(value_max-value_min)
+        R_mean = 0.54 #tf.math.reduce_mean(R_norm)       
+        R_norm = R_norm - R_mean
+        return R_norm
+
+
         
 def prfr_cnn2d(inputs,n_out,filt_temporal_width=120,chan1_n=12, filt1_size=13, chan2_n=0, filt2_size=0, chan3_n=0, filt3_size=0, BatchNorm=True, BatchNorm_train=False, MaxPool=False):
 
