@@ -323,6 +323,9 @@ class Normalize_PRFR(tf.keras.layers.Layer):
         
 def prfr_cnn2d(inputs,n_out,filt_temporal_width=120,chan1_n=12, filt1_size=13, chan2_n=0, filt2_size=0, chan3_n=0, filt3_size=0, BatchNorm=True, BatchNorm_train=False, MaxPool=False):
 
+    BatchNorm = bool(BatchNorm)
+    MaxPool = bool(MaxPool)
+    
     sigma = 0.1
     
     # keras_prLayer = photoreceptor_REIKE(units=1)
@@ -383,6 +386,9 @@ def prfr_cnn2d(inputs,n_out,filt_temporal_width=120,chan1_n=12, filt1_size=13, c
 
 def prfr_cnn2d_multipr(inputs,n_out,filt_temporal_width=120,chan1_n=12, filt1_size=13, chan2_n=0, filt2_size=0, chan3_n=0, filt3_size=0, BatchNorm=True, BatchNorm_train=False, MaxPool=False):
 
+    BatchNorm = bool(BatchNorm)
+    MaxPool = bool(MaxPool)
+    
     sigma = 0.1
     
     # PR Channel 1
@@ -458,6 +464,8 @@ def prfr_cnn2d_multipr(inputs,n_out,filt_temporal_width=120,chan1_n=12, filt1_si
 
 def prfr_cnn2d_fixed(mdl_existing,idx_CNN_start,inputs,n_out,filt_temporal_width=120,chan1_n=12, filt1_size=13, chan2_n=0, filt2_size=0, chan3_n=0, filt3_size=0, BatchNorm=True, BatchNorm_train=False, MaxPool=False):
 
+    BatchNorm = bool(BatchNorm)
+    MaxPool = bool(MaxPool)
     mdl_name = 'PRFR_CNN2D_fixed'
     
     y = Reshape((inputs.shape[1],inputs.shape[-2]*inputs.shape[-1]),name='Reshape_1_pr')(inputs)
@@ -475,7 +483,8 @@ def prfr_cnn2d_fixed(mdl_existing,idx_CNN_start,inputs,n_out,filt_temporal_width
     return Model(inputs, outputs, name=mdl_name)
 
 def prfr_cnn2d_noTime(inputs,n_out,filt_temporal_width=120,chan1_n=12, filt1_size=13, chan2_n=0, filt2_size=0, chan3_n=0, filt3_size=0, BatchNorm=True, BatchNorm_train=False, MaxPool=False):
-
+    BatchNorm = bool(BatchNorm)
+    MaxPool = bool(MaxPool)
     sigma = 0.1
     
     # keras_prLayer = photoreceptor_REIKE(units=1)
@@ -530,7 +539,8 @@ def prfr_cnn2d_noTime(inputs,n_out,filt_temporal_width=120,chan1_n=12, filt1_siz
 
 def pr_cnn2d(inputs,n_out,filt_temporal_width=120,chan1_n=12, filt1_size=13, chan2_n=0, filt2_size=0, chan3_n=0, filt3_size=0, BatchNorm=True, BatchNorm_train=False, MaxPool=False):
         
-    
+    BatchNorm = bool(BatchNorm)
+    MaxPool = bool(MaxPool)
     sigma = 0.1
     
     keras_prLayer = photoreceptor_DA(units=1)
@@ -587,7 +597,8 @@ def pr_cnn2d(inputs,n_out,filt_temporal_width=120,chan1_n=12, filt1_size=13, cha
 
 def pr_cnn2d_fixed(mdl_existing,idx_CNN_start,inputs,n_out,filt_temporal_width=120,chan1_n=12, filt1_size=13, chan2_n=0, filt2_size=0, chan3_n=0, filt3_size=0, BatchNorm=True, BatchNorm_train=False, MaxPool=False):
     
-    
+    BatchNorm = bool(BatchNorm)
+    MaxPool = bool(MaxPool)
     mdl_name = 'PR_CNN2D_fixed'
     
     keras_prLayer = photoreceptor_DA(units=1)
@@ -653,6 +664,9 @@ def pr_cnn3d(inputs, n_out, filt_temporal_width=120, chan1_n=12, filt1_size=13, 
 
 
 def cnn_2d(inputs, n_out, chan1_n=12, filt1_size=13, chan2_n=0, filt2_size=0, chan3_n=0, filt3_size=0, BatchNorm=True, BatchNorm_train=False, MaxPool=False):
+    BatchNorm = bool(BatchNorm)
+    MaxPool = bool(MaxPool)
+    
     sigma = 0.1
     filt_temporal_width=inputs.shape[1]
 
@@ -703,8 +717,10 @@ def cnn_2d(inputs, n_out, chan1_n=12, filt1_size=13, chan2_n=0, filt2_size=0, ch
     return Model(inputs, outputs, name=mdl_name)
 
 
-
 def cnn_3d(inputs, n_out, chan1_n=12, filt1_size=13, filt1_3rdDim=1, chan2_n=25, filt2_size=13, filt2_3rdDim=1, chan3_n=25, filt3_size=13, filt3_3rdDim=1, BatchNorm=True,MaxPool=True):
+    BatchNorm = bool(BatchNorm)
+    MaxPool = bool(MaxPool)
+    
     sigma = 0.1
     filt_temporal_width=inputs.shape[-1]
 
