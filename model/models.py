@@ -572,7 +572,7 @@ def pr_cnn2d(inputs,n_out,filt_temporal_width=120,chan1_n=12, filt1_size=13, cha
     y = Reshape((inputs.shape[1],inputs.shape[-2],inputs.shape[-1]))(y)
     y = y[:,inputs.shape[1]-filt_temporal_width:,:,:]
     
-    y = Normalize(units=1)(y)
+    y = Normalize_PRDA(units=1)(y)
     
     # CNN - first layer
     y = Conv2D(chan1_n, filt1_size, data_format="channels_first", kernel_regularizer=l2(1e-3),name='CNNs_start')(y)
