@@ -419,14 +419,14 @@ def prfr_cnn2d_multipr(inputs,n_out,filt_temporal_width=120,chan1_n=12, filt1_si
     y1 = photoreceptor_REIKE(units=1)(y1)
     y1 = Reshape((inputs.shape[1],inputs.shape[-2],inputs.shape[-1]))(y1)
     y1 = y1[:,inputs.shape[1]-filt_temporal_width:,:,:]
-    y1 = Normalize(units=1)(y1)
+    y1 = Normalize_PRFR(units=1)(y1)
     y1 = tf.keras.backend.expand_dims(y1,axis=-1)
     
     y2 = Reshape((inputs.shape[1],inputs.shape[-2]*inputs.shape[-1]))(inputs)
     y2 = photoreceptor_REIKE(units=1)(y2)
     y2 = Reshape((inputs.shape[1],inputs.shape[-2],inputs.shape[-1]))(y2)
     y2 = y2[:,inputs.shape[1]-filt_temporal_width:,:,:]
-    y2 = Normalize(units=1)(y2)
+    y2 = Normalize_PRFR(units=1)(y2)
     y2 = tf.keras.backend.expand_dims(y2,axis=-1)
     
     y = tf.keras.layers.concatenate((y1,y2), axis=-1)
