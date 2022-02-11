@@ -43,10 +43,10 @@ def run_model(expDate,mdl_name,path_model_save_base,fname_data_train_val_test,pa
 
     from tensorflow.keras.layers import Input
     
-    from model.data_handler import load_h5Dataset, prepare_data_cnn3d, prepare_data_cnn2d, prepare_data_convLSTM, check_trainVal_contamination, prepare_data_pr_cnn2d,pr_cnn2d_multipr
+    from model.data_handler import load_h5Dataset, prepare_data_cnn3d, prepare_data_cnn2d, prepare_data_convLSTM, check_trainVal_contamination, prepare_data_pr_cnn2d
     from model.performance import save_modelPerformance, model_evaluate, model_evaluate_new
     import model.metrics as metrics
-    from model.models import model_definitions, get_model_memory_usage, cnn_3d, cnn_2d, pr_cnn2d, prfr_cnn2d,pr_cnn2d_fixed, pr_cnn3d, prfr_cnn2d_fixed, prfr_cnn2d_noTime, prfr_cnn2d_multipr
+    from model.models import model_definitions, get_model_memory_usage, cnn_3d, cnn_2d, pr_cnn2d, prfr_cnn2d,pr_cnn2d_fixed, pr_cnn3d, prfr_cnn2d_fixed, prfr_cnn2d_noTime, prfr_cnn2d_multipr, pr_cnn2d_multipr
     from model.train_model import train, chunker
     from model.load_savedModel import load
     
