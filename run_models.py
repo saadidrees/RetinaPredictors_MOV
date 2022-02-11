@@ -26,39 +26,7 @@ def run_model(expDate,mdl_name,path_model_save_base,fname_data_train_val_test,pa
           
 # %% prepare data
     
-    if chan2_n == 0:
-        filt2_size = 0
-        filt2_3rdDim = 0
-        
-        chan3_n = 0
-        filt3_size = 0
-        filt3_3rdDim = 0 
-        
-    if chan3_n == 0:
-        filt3_size = 0
-        filt3_3rdDim = 0 
-        
-    # print('expDate: '+expDate)
-    # print('runOnCluster: '+str(runOnCluster))
-    # print('temporal_width: '+str(temporal_width))
-    # print('thresh_rr: '+str(thresh_rr))
-    # print('chan1_n: '+str(chan1_n))
-    # print('filt1_size: '+str(filt1_size))
-    # print('filt1_3rdDim: '+str(filt1_3rdDim))
-    # print('chan2_n: '+str(chan2_n))
-    # print('filt2_size: '+str(filt2_size))
-    # print('filt2_3rdDim: '+str(filt2_3rdDim))
-    # print('chan3_n: '+str(chan3_n))
-    # print('filt3_size: '+str(filt3_size))
-    # print('filt3_3rdDim: '+str(filt3_3rdDim))   
-    # print('nb_epochs: '+str(nb_epochs))
-    # print('bz_ms: '+str(bz_ms))   
-    # print('trainingSamps_dur: '+str(trainingSamps_dur))   
-    # print('validationSamps_dur: '+str(validationSamps_dur))   
-    # print('BatchNorm: '+str(BatchNorm))   
-    # print('MaxPool: '+str(MaxPool))   
-    # print('lr: '+str(lr))   
- 
+# import needed modules
     import numpy as np
     import os
     import math
@@ -75,10 +43,10 @@ def run_model(expDate,mdl_name,path_model_save_base,fname_data_train_val_test,pa
 
     from tensorflow.keras.layers import Input
     
-    from model.data_handler import load_h5Dataset, prepare_data_cnn3d, prepare_data_cnn2d, prepare_data_convLSTM, check_trainVal_contamination, prepare_data_pr_cnn2d
+    from model.data_handler import load_h5Dataset, prepare_data_cnn3d, prepare_data_cnn2d, prepare_data_convLSTM, check_trainVal_contamination, prepare_data_pr_cnn2d,pr_cnn2d_multipr
     from model.performance import save_modelPerformance, model_evaluate, model_evaluate_new
     import model.metrics as metrics
-    from model.models import get_model_memory_usage, cnn_3d, cnn_2d, pr_cnn2d, prfr_cnn2d,pr_cnn2d_fixed, pr_cnn3d, prfr_cnn2d_fixed, prfr_cnn2d_noTime, prfr_cnn2d_multipr
+    from model.models import model_definitions, get_model_memory_usage, cnn_3d, cnn_2d, pr_cnn2d, prfr_cnn2d,pr_cnn2d_fixed, pr_cnn3d, prfr_cnn2d_fixed, prfr_cnn2d_noTime, prfr_cnn2d_multipr
     from model.train_model import train, chunker
     from model.load_savedModel import load
     
@@ -88,168 +56,146 @@ def run_model(expDate,mdl_name,path_model_save_base,fname_data_train_val_test,pa
     from collections import namedtuple
     Exptdata = namedtuple('Exptdata', ['X', 'y'])
 
+    # if only 1 layer cnn then set all parameters for next layers to 0
+    if chan2_n == 0:
+        filt2_size = 0
+        filt2_3rdDim = 0
+        
+        chan3_n = 0
+        filt3_size = 0
+        filt3_3rdDim = 0 
+        
+    if chan3_n == 0:
+        filt3_size = 0
+        filt3_3rdDim = 0 
 
+    # path to save results to - PARAMETERIZE THIS
     if runOnCluster==1:
-        path_save_performance = '/home/sidrees/scratch/RetinaPredictors/performance'
+        path_save_performance = '/home/sidrees/scratch/RetinaPredictors_MOV/performance'
     else:
-        path_save_performance = '/home/saad/postdoc_db/projects/RetinaPredictors/performance'
+        path_save_performance = '/home/saad/postdoc_db/projects/RetinaPredictors_MOV/performance'
     
     
     if not os.path.exists(path_save_performance):
         os.makedirs(path_save_performance)
-    
+          
     
 # load train val and test datasets from saved h5 file
+    # load_h5dataset is a function to load training and validation data from h5 dataset. We can extract all data or a subset using the nsamps arguments.
+    # data_train, val and test are named tuples. data_train.X contains the stimulus with dimensions [samples,y pixels, x pixels]
+    # and data_train.y contains the spikerate normalized by median [samples,numOfCells]
     data_train,data_val,data_test,data_quality,dataset_rr,parameters,_ = load_h5Dataset(fname_data_train_val_test,nsamps_val=validationSamps_dur,nsamps_train=trainingSamps_dur,LOAD_ALL_TR=True)
-    t_frame = parameters['t_frame']
+    t_frame = parameters['t_frame']     # time in ms of one frame/sample 
     
     
-    
-# Arrange data according to needs
-    idx_unitsToTake = data_quality['idx_unitsToTake']
+# Arrange data according to the model
+    idx_unitsToTake = data_quality['idx_unitsToTake']   # unit/cell id of the cells present in the dataset. [length should be same as 2nd dimension of data_train.y]
     idx_unitsToTake
-    temporal_width_eval = temporal_width
     
-    if mdl_name == 'CNN_3D' or mdl_name == 'CNN_3D_INCEP' or mdl_name == 'CNN_3D_LSTM':
-        data_train = prepare_data_cnn3d(data_train,temporal_width,np.arange(len(idx_unitsToTake)))
-        data_test = prepare_data_cnn3d(data_test,temporal_width,np.arange(len(idx_unitsToTake)))
-        data_val = prepare_data_cnn3d(data_val,temporal_width,np.arange(len(idx_unitsToTake)))
-        
-    elif mdl_name == 'CNN_2D' or mdl_name=='CNN_2D_LSTM':
-        data_train = prepare_data_cnn2d(data_train,temporal_width,np.arange(len(idx_unitsToTake)))
-        data_test = prepare_data_cnn2d(data_test,temporal_width,np.arange(len(idx_unitsToTake)))
-        data_val = prepare_data_cnn2d(data_val,temporal_width,np.arange(len(idx_unitsToTake)))       
-    
-    elif mdl_name == 'convLSTM' or mdl_name == 'LSTM_CNN_2D':
-        data_train = prepare_data_convLSTM(data_train,temporal_width,np.arange(len(idx_unitsToTake)))
-        data_test = prepare_data_convLSTM(data_test,temporal_width,np.arange(len(idx_unitsToTake)))
-        data_val = prepare_data_convLSTM(data_val,temporal_width,np.arange(len(idx_unitsToTake)))   
-        
-    elif mdl_name[:8] == 'PR_CNN2D':
-        data_train = prepare_data_cnn2d(data_train,pr_temporal_width,np.arange(len(idx_unitsToTake)))
-        data_test = prepare_data_cnn2d(data_test,pr_temporal_width,np.arange(len(idx_unitsToTake)))
-        data_val = prepare_data_cnn2d(data_val,pr_temporal_width,np.arange(len(idx_unitsToTake)))
+    # Data will be rolled so that each sample has a temporal width. Like N frames of movie in one sample. The duration of each frame is in t_frame
+    # if the model has a photoreceptor layer, then the PR layer has a termporal width of pr_temporal_width, which before convs will be chopped off to temporal width
+    # this is done to get rid of boundary effects. pr_temporal_width > temporal width
+    if mdl_name[:2] == 'PR':    # in this case the rolling width should be that of PR
+        temporal_width_prepData = pr_temporal_width
         temporal_width_eval = pr_temporal_width
         
-    elif mdl_name[:10] == 'PRFR_CNN2D':
-        data_train = prepare_data_cnn2d(data_train,pr_temporal_width,np.arange(len(idx_unitsToTake)))
-        data_test = prepare_data_cnn2d(data_test,pr_temporal_width,np.arange(len(idx_unitsToTake)))
-        data_val = prepare_data_cnn2d(data_val,pr_temporal_width,np.arange(len(idx_unitsToTake)))
-        temporal_width_eval = pr_temporal_width
-        
-    elif mdl_name[:8] == 'PR_CNN3D':
-        data_train = prepare_data_cnn3d(data_train,pr_temporal_width,np.arange(len(idx_unitsToTake)))
-        data_test = prepare_data_cnn3d(data_test,pr_temporal_width,np.arange(len(idx_unitsToTake)))
-        data_val = prepare_data_cnn3d(data_val,pr_temporal_width,np.arange(len(idx_unitsToTake)))
-        temporal_width_eval = pr_temporal_width
-        
-    elif mdl_name == 'replaceDense_2D':
-        data_train = prepare_data_cnn2d(data_train,temporal_width,np.arange(len(idx_unitsToTake)))
-        data_test = prepare_data_cnn2d(data_test,temporal_width,np.arange(len(idx_unitsToTake)))
-        data_val = prepare_data_cnn2d(data_val,temporal_width,np.arange(len(idx_unitsToTake)))               
-    
-    elif mdl_name == 'PRFR_CNN2D_NOTIME':
-        data_train = prepare_data_cnn2d(data_train,pr_temporal_width,np.arange(len(idx_unitsToTake)))
-        data_test = prepare_data_cnn2d(data_test,pr_temporal_width,np.arange(len(idx_unitsToTake)))
-        data_val = prepare_data_cnn2d(data_val,pr_temporal_width,np.arange(len(idx_unitsToTake)))
-        temporal_width_eval = pr_temporal_width
+    else:   # in all other cases its same as temporal width
+        temporal_width_prepData = temporal_width
+        temporal_width_eval = temporal_width    # termporal width of each sample. Like how many frames of movie in one sample
 
     
+    modelNames_all = model_definitions()    # get all model names
+    modelNames_2D = modelNames_all[0]
+    modelNames_3D = modelNames_all[1]
+    
+    # prepare data according to model. Roll and adjust dimensions according to 2D or 3D model
+    if mdl_name in modelNames_2D:
+        data_train = prepare_data_cnn2d(data_train,temporal_width_prepData,np.arange(len(idx_unitsToTake)))     # [samples,temporal_width,rows,columns]
+        data_test = prepare_data_cnn2d(data_test,temporal_width_prepData,np.arange(len(idx_unitsToTake)))
+        data_val = prepare_data_cnn2d(data_val,temporal_width_prepData,np.arange(len(idx_unitsToTake)))   
+        
+        filt1_3rdDim=0
+        filt2_3rdDim=0
+        filt3_3rdDim=0
+
+        
+    elif mdl_name in modelNames_3D:
+        data_train = prepare_data_cnn3d(data_train,temporal_width_prepData,np.arange(len(idx_unitsToTake)))
+        data_test = prepare_data_cnn3d(data_test,temporal_width_prepData,np.arange(len(idx_unitsToTake)))
+        data_val = prepare_data_cnn3d(data_val,temporal_width_prepData,np.arange(len(idx_unitsToTake)))
+
+    # Clean this up
     if BatchNorm==1:
         bn_val=1
-        BatchNorm=True
     else:
         bn_val=0
-        BatchNorm=False
+    
+    
     if MaxPool==1:
         mp_val=1
-        MaxPool=True
     else:
         mp_val=0       
-        MaxPool=False
         
-    if BatchNorm_train:
-        BatchNorm_train = True
-    else:
-        BatchNorm_train = False
     
-    bz = math.ceil(bz_ms/t_frame)
+    bz = math.ceil(bz_ms/t_frame)   # input batch size (bz_ms) is in ms. Convert into samples
     
-    # # TEMPORARY!!! DELETE THIS
-    # #/*
-    # num_train_samples = 20000
-    # data_train = Exptdata(data_train.X[:num_train_samples,:,:,:],data_train.y[:num_train_samples])
-    # #*/
-
-    x = Input(shape=data_train.X.shape[1:])
-    n_cells = data_train.y.shape[1]
+    x = Input(shape=data_train.X.shape[1:]) # keras input layer
+    n_cells = data_train.y.shape[1]         # number of units in output layer
 
 # %% Select model 
+    # Figure out a better way of fname_model
+    
     if mdl_name == 'CNN_3D':       
         mdl = cnn_3d(x, n_cells, chan1_n=chan1_n, filt1_size=filt1_size, filt1_3rdDim=filt1_3rdDim, chan2_n=chan2_n, filt2_size=filt2_size, filt2_3rdDim=filt2_3rdDim, chan3_n=chan3_n, filt3_size=filt3_size, filt3_3rdDim=filt3_3rdDim, BatchNorm=BatchNorm,MaxPool=MaxPool)
-        fname_model = 'U-%0.2f_T-%03d_C1-%02d-%02d-%02d_C2-%02d-%02d-%02d_C3-%02d-%02d-%02d_BN-%d_MP-%d_TR-%02d' %(thresh_rr,temporal_width,chan1_n,filt1_size,filt1_3rdDim,
+        fname_model = 'U-%0.2f_T-%03d_C1-%02d-%02d-%02d_C2-%02d-%02d-%02d_C3-%02d-%02d-%02d_BN-%d_MP-%d_LR-%0.4f_TR-%02d' %(thresh_rr,temporal_width,chan1_n,filt1_size,filt1_3rdDim,
                                                                                      chan2_n,filt2_size,filt2_3rdDim,
                                                                                      chan3_n,filt3_size,filt3_3rdDim,
-                                                                                     bn_val,mp_val,c_trial)
+                                                                                     bn_val,mp_val,lr,c_trial)
     elif mdl_name=='CNN_2D':
-        mdl = cnn_2d(x, n_cells, chan1_n=chan1_n, filt1_size=filt1_size, chan2_n=chan2_n, filt2_size=filt2_size, chan3_n=chan3_n, filt3_size=filt3_size, BatchNorm=BatchNorm,MaxPool=MaxPool,BatchNorm_train = BatchNorm_train)
+        mdl = cnn_2d(x, n_cells, chan1_n=chan1_n, filt1_size=filt1_size, chan2_n=chan2_n, filt2_size=filt2_size, chan3_n=chan3_n, filt3_size=filt3_size, BatchNorm=BatchNorm,MaxPool=MaxPool)
         fname_model = 'U-%0.2f_T-%03d_C1-%02d-%02d_C2-%02d-%02d_C3-%02d-%02d_BN-%d_MP-%d_LR-%0.4f_TR-%02d' %(thresh_rr,temporal_width,chan1_n,filt1_size,
                                                                                      chan2_n,filt2_size,
                                                                                      chan3_n,filt3_size,
                                                                                      bn_val,mp_val,lr,c_trial)
-        filt1_3rdDim=0
-        filt2_3rdDim=0
-        filt3_3rdDim=0
         
     elif mdl_name=='PR_CNN2D':
-        mdl = pr_cnn2d(x, n_cells, filt_temporal_width = temporal_width, chan1_n=chan1_n, filt1_size=filt1_size, chan2_n=chan2_n, filt2_size=filt2_size, chan3_n=chan3_n, filt3_size=filt3_size, BatchNorm=BatchNorm,MaxPool=MaxPool,BatchNorm_train = BatchNorm_train)
+        mdl = pr_cnn2d(x, n_cells, filt_temporal_width = temporal_width, chan1_n=chan1_n, filt1_size=filt1_size, chan2_n=chan2_n, filt2_size=filt2_size, chan3_n=chan3_n, filt3_size=filt3_size, BatchNorm=BatchNorm,MaxPool=MaxPool)
         fname_model = 'U-%0.2f_P-%03d_T-%03d_C1-%02d-%02d_C2-%02d-%02d_C3-%02d-%02d_BN-%d_MP-%d_LR-%0.4f_TR-%02d' %(thresh_rr,pr_temporal_width,temporal_width,chan1_n,filt1_size,
                                                                                      chan2_n,filt2_size,
                                                                                      chan3_n,filt3_size,
                                                                                      bn_val,mp_val,lr,c_trial)
-        filt1_3rdDim=0
-        filt2_3rdDim=0
-        filt3_3rdDim=0
+        
+        
+    elif mdl_name=='PR_CNN2D_MULTIPR':
+        mdl = pr_cnn2d_multipr(x, n_cells, filt_temporal_width = temporal_width, chan1_n=chan1_n, filt1_size=filt1_size, chan2_n=chan2_n, filt2_size=filt2_size, chan3_n=chan3_n, filt3_size=filt3_size, BatchNorm=BatchNorm,MaxPool=MaxPool)
+        fname_model = 'U-%0.2f_P-%03d_T-%03d_C1-%02d-%02d_C2-%02d-%02d_C3-%02d-%02d_BN-%d_MP-%d_LR-%0.4f_TR-%02d' %(thresh_rr,pr_temporal_width,temporal_width,chan1_n,filt1_size,
+                                                                                     chan2_n,filt2_size,
+                                                                                     chan3_n,filt3_size,
+                                                                                     bn_val,mp_val,lr,c_trial)        
+
 
     elif mdl_name=='PRFR_CNN2D':
-        mdl = prfr_cnn2d(x, n_cells, filt_temporal_width = temporal_width, chan1_n=chan1_n, filt1_size=filt1_size, chan2_n=chan2_n, filt2_size=filt2_size, chan3_n=chan3_n, filt3_size=filt3_size, BatchNorm=BatchNorm,MaxPool=MaxPool,BatchNorm_train = BatchNorm_train)
+        mdl = prfr_cnn2d(x, n_cells, filt_temporal_width = temporal_width, chan1_n=chan1_n, filt1_size=filt1_size, chan2_n=chan2_n, filt2_size=filt2_size, chan3_n=chan3_n, filt3_size=filt3_size, BatchNorm=BatchNorm,MaxPool=MaxPool)
         fname_model = 'U-%0.2f_P-%03d_T-%03d_C1-%02d-%02d_C2-%02d-%02d_C3-%02d-%02d_BN-%d_MP-%d_LR-%0.4f_TR-%02d' %(thresh_rr,pr_temporal_width,temporal_width,chan1_n,filt1_size,
                                                                                      chan2_n,filt2_size,
                                                                                      chan3_n,filt3_size,
                                                                                      bn_val,mp_val,lr,c_trial)
-        filt1_3rdDim=0
-        filt2_3rdDim=0
-        filt3_3rdDim=0
         
     elif mdl_name=='PRFR_CNN2D_MULTIPR':
-        mdl = prfr_cnn2d_multipr(x, n_cells, filt_temporal_width = temporal_width, chan1_n=chan1_n, filt1_size=filt1_size, chan2_n=chan2_n, filt2_size=filt2_size, chan3_n=chan3_n, filt3_size=filt3_size, BatchNorm=BatchNorm,MaxPool=MaxPool,BatchNorm_train = BatchNorm_train)
+        mdl = prfr_cnn2d_multipr(x, n_cells, filt_temporal_width = temporal_width, chan1_n=chan1_n, filt1_size=filt1_size, chan2_n=chan2_n, filt2_size=filt2_size, chan3_n=chan3_n, filt3_size=filt3_size, BatchNorm=BatchNorm,MaxPool=MaxPool)
+        fname_model = 'U-%0.2f_P-%03d_T-%03d_C1-%02d-%02d_C2-%02d-%02d_C3-%02d-%02d_BN-%d_MP-%d_LR-%0.4f_TR-%02d' %(thresh_rr,pr_temporal_width,temporal_width,chan1_n,filt1_size,
+                                                                                     chan2_n,filt2_size,
+                                                                                     chan3_n,filt3_size,
+                                                                                     bn_val,mp_val,lr,c_trial)        
+       
+    elif mdl_name=='PR_CNN3D':
+        mdl = pr_cnn3d(x, n_cells, filt_temporal_width = temporal_width, chan1_n=chan1_n, filt1_size=filt1_size, chan2_n=chan2_n, filt2_size=filt2_size, chan3_n=chan3_n, filt3_size=filt3_size, BatchNorm=BatchNorm,MaxPool=MaxPool)
         fname_model = 'U-%0.2f_P-%03d_T-%03d_C1-%02d-%02d_C2-%02d-%02d_C3-%02d-%02d_BN-%d_MP-%d_LR-%0.4f_TR-%02d' %(thresh_rr,pr_temporal_width,temporal_width,chan1_n,filt1_size,
                                                                                      chan2_n,filt2_size,
                                                                                      chan3_n,filt3_size,
                                                                                      bn_val,mp_val,lr,c_trial)
-        filt1_3rdDim=0
-        filt2_3rdDim=0
-        filt3_3rdDim=0
         
-        
-    elif mdl_name=='PRFR_CNN2D_NOTIME':
-        mdl = prfr_cnn2d_noTime(x, n_cells, filt_temporal_width = 0, chan1_n=chan1_n, filt1_size=filt1_size, chan2_n=chan2_n, filt2_size=filt2_size, chan3_n=chan3_n, filt3_size=filt3_size, BatchNorm=BatchNorm,MaxPool=MaxPool,BatchNorm_train = BatchNorm_train)
-        fname_model = 'U-%0.2f_P-%03d_T-%03d_C1-%02d-%02d_C2-%02d-%02d_C3-%02d-%02d_BN-%d_MP-%d_TR-%02d' %(thresh_rr,pr_temporal_width,temporal_width,chan1_n,filt1_size,
-                                                                                     chan2_n,filt2_size,
-                                                                                     chan3_n,filt3_size,
-                                                                                     bn_val,mp_val,c_trial)
-        filt1_3rdDim=0
-        filt2_3rdDim=0
-        filt3_3rdDim=0
-       
-    elif mdl_name=='PR_CNN3D':
-        mdl = pr_cnn3d(x, n_cells, filt_temporal_width = temporal_width, chan1_n=chan1_n, filt1_size=filt1_size, chan2_n=chan2_n, filt2_size=filt2_size, chan3_n=chan3_n, filt3_size=filt3_size, BatchNorm=BatchNorm,MaxPool=MaxPool,BatchNorm_train = BatchNorm_train)
-        fname_model = 'U-%0.2f_P-%03d_T-%03d_C1-%02d-%02d_C2-%02d-%02d_C3-%02d-%02d_BN-%d_MP-%d_TR-%02d' %(thresh_rr,pr_temporal_width,temporal_width,chan1_n,filt1_size,
-                                                                                     chan2_n,filt2_size,
-                                                                                     chan3_n,filt3_size,
-                                                                                     bn_val,mp_val,c_trial)
-        
-    elif mdl_name=='PR_CNN2D_fixed':
+    elif mdl_name=='PR_CNN2D_fixed':    # this is where the PR layer is fixed and only CNNs are trained. Hmm or the other way around.
         rgb = os.path.split(path_existing_mdl)[-1]
         mdl_existing = load(os.path.join(path_existing_mdl,rgb))
         # idx_CNN_start = 4
@@ -259,13 +205,10 @@ def run_model(expDate,mdl_name,path_model_save_base,fname_data_train_val_test,pa
                              chan1_n=chan1_n, filt1_size=filt1_size, chan2_n=chan2_n, filt2_size=filt2_size, chan3_n=chan3_n, filt3_size=filt3_size,
                              BatchNorm=BatchNorm,MaxPool=MaxPool,BatchNorm_train = BatchNorm_train)
         
-        fname_model = 'U-%0.2f_P-%03d_T-%03d_C1-%02d-%02d_C2-%02d-%02d_C3-%02d-%02d_BN-%d_MP-%d_TR-%02d' %(thresh_rr,pr_temporal_width,temporal_width,chan1_n,filt1_size,
+        fname_model = 'U-%0.2f_P-%03d_T-%03d_C1-%02d-%02d_C2-%02d-%02d_C3-%02d-%02d_BN-%d_MP-%d_LR-%0.4f_TR-%02d' %(thresh_rr,pr_temporal_width,temporal_width,chan1_n,filt1_size,
                                                                                      chan2_n,filt2_size,
                                                                                      chan3_n,filt3_size,
-                                                                                     bn_val,mp_val,c_trial)
-        filt1_3rdDim=0
-        filt2_3rdDim=0
-        filt3_3rdDim=0
+                                                                                     bn_val,mp_val,lr,c_trial)
         
 
     elif mdl_name=='PRFR_CNN2D_fixed': # freds model
@@ -282,53 +225,13 @@ def run_model(expDate,mdl_name,path_model_save_base,fname_data_train_val_test,pa
                                                                                      chan2_n,filt2_size,
                                                                                      chan3_n,filt3_size,
                                                                                      bn_val,mp_val,c_trial)
-        filt1_3rdDim=0
-        filt2_3rdDim=0
-        filt3_3rdDim=0
 
-
-    elif mdl_name == 'CNN_3D_INCEP':       
-        mdl = cnn_3d_inception(x, n_cells, chan1_n=chan1_n, filt1_size=filt1_size, filt1_3rdDim=filt1_3rdDim, chan2_n=chan2_n, filt2_size=filt2_size, filt2_3rdDim=filt2_3rdDim, chan3_n=chan3_n, filt3_size=filt3_size, filt3_3rdDim=filt3_3rdDim, BatchNorm=BatchNorm,MaxPool=MaxPool)
-        fname_model = 'U-%0.2f_T-%03d_C1-%02d-%02d-%02d_C2-%02d-%02d-%02d_C3-%02d-%02d-%02d_BN-%d_MP-%d_TR-%02d' %(thresh_rr,temporal_width,chan1_n,filt1_size,filt1_3rdDim,
-                                                                                     chan2_n,filt2_size,filt2_3rdDim,
-                                                                                     chan3_n,filt3_size,filt3_3rdDim,
-                                                                                     bn_val,mp_val,c_trial)
-    elif mdl_name == 'convLSTM':       
-        mdl = convLSTM(x, n_cells, chan1_n=chan1_n, filt1_size=filt1_size, filt1_3rdDim=filt1_3rdDim, chan2_n=chan2_n, filt2_size=filt2_size, filt2_3rdDim=filt2_3rdDim, chan3_n=chan3_n, filt3_size=filt3_size, filt3_3rdDim=filt3_3rdDim, BatchNorm=BatchNorm,MaxPool=MaxPool)
-        fname_model = 'U-%0.2f_T-%03d_C1-%02d-%02d-%02d_C2-%02d-%02d-%02d_C3-%02d-%02d-%02d_BN-%d_MP-%d_TR-%02d' %(thresh_rr,temporal_width,chan1_n,filt1_size,filt1_3rdDim,
-                                                                                     chan2_n,filt2_size,filt2_3rdDim,
-                                                                                     chan3_n,filt3_size,filt3_3rdDim,
-                                                                                     bn_val,mp_val,c_trial)
-
-    elif mdl_name == 'LSTM_CNN_2D':       
-        mdl = lstm_cnn_2d(x, n_cells, chan1_n=chan1_n, filt1_size=filt1_size, filt1_3rdDim=filt1_3rdDim, chan2_n=chan2_n, filt2_size=filt2_size, filt2_3rdDim=filt2_3rdDim, chan3_n=chan3_n, filt3_size=filt3_size, filt3_3rdDim=filt3_3rdDim, BatchNorm=BatchNorm,MaxPool=MaxPool)
-        fname_model = 'U-%0.2f_T-%03d_C1-%02d-%02d-%02d_C2-%02d-%02d-%02d_C3-%02d-%02d-%02d_BN-%d_MP-%d_TR-%02d' %(thresh_rr,temporal_width,chan1_n,filt1_size,filt1_3rdDim,
-                                                                                     chan2_n,filt2_size,filt2_3rdDim,
-                                                                                     chan3_n,filt3_size,filt3_3rdDim,
-                                                                                     bn_val,mp_val,c_trial)
-
-        
-    elif mdl_name == 'CNN_3D_LSTM':       
-        mdl = cnn_3d_lstm(x, n_cells, chan1_n=chan1_n, filt1_size=filt1_size, filt1_3rdDim=filt1_3rdDim, chan2_n=chan2_n, filt2_size=filt2_size, filt2_3rdDim=filt2_3rdDim, chan3_n=chan3_n, filt3_size=filt3_size, filt3_3rdDim=filt3_3rdDim, BatchNorm=BatchNorm,MaxPool=MaxPool)
-        fname_model = 'U-%0.2f_T-%03d_C1-%02d-%02d-%02d_C2-%02d-%02d-%02d_C3-%02d-%02d-%02d_BN-%d_MP-%d_TR-%02d' %(thresh_rr,temporal_width,chan1_n,filt1_size,filt1_3rdDim,
-                                                                                     chan2_n,filt2_size,filt2_3rdDim,
-                                                                                     chan3_n,filt3_size,filt3_3rdDim,
-                                                                                     bn_val,mp_val,c_trial)
-        
-    elif mdl_name=='CNN_2D_LSTM':
-        mdl = cnn_2d_lstm(x, n_cells, chan1_n=chan1_n, filt1_size=filt1_size, chan2_n=chan2_n, filt2_size=filt2_size, chan3_n=chan3_n, filt3_size=filt3_size, BatchNorm=BatchNorm,MaxPool=MaxPool)
-        fname_model = 'U-%0.2f_T-%03d_C1-%02d-%02d_C2-%02d-%02d_C3-%02d-%02d_BN-%d_MP-%d_TR-%02d' %(thresh_rr,temporal_width,chan1_n,filt1_size,
-                                                                                     chan2_n,filt2_size,
-                                                                                     chan3_n,filt3_size,
-                                                                                     bn_val,mp_val,c_trial)
-        filt1_3rdDim=0
-        filt2_3rdDim=0
-        filt3_3rdDim=0
 
     else:
         raise ValueError('Wrong model name')
     
-    path_model_save = os.path.join(path_model_save_base,mdl_name,fname_model)
+    
+    path_model_save = os.path.join(path_model_save_base,mdl_name,fname_model)   # the model save directory is the fname_model appened to save path
     
     if not os.path.exists(path_model_save):
         os.makedirs(path_model_save)
@@ -341,10 +244,11 @@ def run_model(expDate,mdl_name,path_model_save_base,fname_data_train_val_test,pa
     fname_excel = 'performance_'+fname_model+'.csv'
      
     # %% Train model
-    gbytes_usage = get_model_memory_usage(bz, mdl)
+    gbytes_usage = get_model_memory_usage(bz, mdl)  # for PRFR layer models, this is not a good estimate.
     print('Memory required = %0.2f GB' %gbytes_usage)
     # continue a halted training: load existing model checkpoint and initial_epoch value to pass on for continuing the training
     if CONTINUE_TRAINING==1:       
+        # glob.glob()
         initial_epoch = len([f for f in os.listdir(path_model_save) if f.endswith('index')])
         if initial_epoch == 0:
             initial_epoch = len([f for f in os.listdir(path_model_save) if f.startswith('weights')])
@@ -352,14 +256,13 @@ def run_model(expDate,mdl_name,path_model_save_base,fname_data_train_val_test,pa
         initial_epoch = 0
 
     print('-----RUNNING MODEL-----')
-    validation_batch_size = 600#bz #data_val.X.shape[0]
+    validation_batch_size = 100 # samples
     mdl_history = train(mdl, data_train, data_val, fname_excel,path_model_save, fname_model, bz=bz, nb_epochs=nb_epochs,validation_batch_size=validation_batch_size,validation_freq=500,USE_CHUNKER=USE_CHUNKER,initial_epoch=initial_epoch,lr=lr)  
     mdl_history = mdl_history.history
     _ = gc.collect()
     
     # %% Model Evaluation
-    nb_epochs = np.max([initial_epoch,nb_epochs])
-    obs_rate = data_val.y
+    nb_epochs = np.max([initial_epoch,nb_epochs])   # number of epochs. Update this variable based on the epoch at which training ended
     val_loss_allEpochs = np.empty(nb_epochs)
     val_loss_allEpochs[:] = np.nan
     fev_medianUnits_allEpochs = np.empty(nb_epochs)
@@ -380,7 +283,7 @@ def run_model(expDate,mdl_name,path_model_save_base,fname_data_train_val_test,pa
     rrCorr_allUnits_allEpochs = np.zeros((nb_epochs,n_cells))
     rrCorr_allUnits_allEpochs[:] = np.nan
     
-    try:
+    try:    # for compatibility with greg's dataset
         obs_rate_allStimTrials = dataset_rr['stim_0']['val']
         obs_noise = None
         num_iters = 10
@@ -389,24 +292,24 @@ def run_model(expDate,mdl_name,path_model_save_base,fname_data_train_val_test,pa
         obs_noise = data_quality['var_noise']
         num_iters = 1
     
-    if 'samps_shift' in parameters.keys():
-        samps_shift = parameters['samps_shift']
-    else:
-        samps_shift = 0
+    
+        samps_shift = 0 # number of samples to shift the response by. This was to correct some timestamp error in gregs data
 
+    # Check if any stimulus frames from the validation set are present in the training set
+    # check_trainVal_contamination(data_train.X,data_val.X,temporal_width)  # commented out because it takes long for my dataset and I did it once while preparing the dataset
+    
+    obs_rate = data_val.y   # the actual data
 
-    # check_trainVal_contamination(data_train.X,data_val.X,temporal_width)
     
     print('-----EVALUATING PERFORMANCE-----')
-    for i in range(0,nb_epochs-1):
+    for i in range(0,nb_epochs):
         # weight_file = 'weights_'+fname_model+'_epoch-%03d.h5' % (i+1)
-        weight_file = 'weights_'+fname_model+'_epoch-%03d' % (i+1)
+        weight_file = 'weights_'+fname_model+'_epoch-%03d' % (i+1)  # 'file_name_{}_{:.03f}.png'.format(f_nm, val)
         mdl.load_weights(os.path.join(path_model_save,weight_file))
-        gen = chunker(data_val.X,bz,mode='predict')
+        gen = chunker(data_val.X,bz,mode='predict') # use generators to generate batches of data
         pred_rate = mdl.predict(gen,steps=int(np.ceil(data_val.X.shape[0]/bz)))
         # pred_rate = mdl.predict(data_val.X)
         _ = gc.collect()
-        # val_loss,_,_,_ = mdl.evaluate(data_val.X,data_val.y,batch_size=data_val.X.shape[0])
         val_loss = None
         val_loss_allEpochs[i] = val_loss
         
@@ -415,7 +318,7 @@ def run_model(expDate,mdl_name,path_model_save_base,fname_data_train_val_test,pa
         predCorr_loop = np.zeros((num_iters,n_cells))
         rrCorr_loop = np.zeros((num_iters,n_cells))
 
-        for j in range(num_iters):
+        for j in range(num_iters):  # nunm_iters is 1 with my dataset. This was mainly for greg's data where we would randomly split the dataset to calculate performance metrics 
             fev_loop[j,:], fracExVar_loop[j,:], predCorr_loop[j,:], rrCorr_loop[j,:] = model_evaluate_new(obs_rate_allStimTrials,pred_rate,temporal_width_eval,lag=int(samps_shift),obs_noise=obs_noise)
             
         fev = np.mean(fev_loop,axis=0)
@@ -428,7 +331,6 @@ def run_model(expDate,mdl_name,path_model_save_base,fname_data_train_val_test,pa
             rrCorr = data_quality['dist_cc']
 
 
-        # rgb = metrics.fraction_of_explainable_variance_explained(obs_rate,est_rate,unit_noise)
         fev_allUnits_allEpochs[i,:] = fev
         fev_medianUnits_allEpochs[i] = np.nanmedian(fev)      
         fracExVar_allUnits_allEpochs[i,:] = fracExVar
@@ -442,11 +344,6 @@ def run_model(expDate,mdl_name,path_model_save_base,fname_data_train_val_test,pa
 
         _ = gc.collect()
     
-    # fracExVar_allUnits = np.mean(fracExVar_allUnits_allEpochs,axis=0)
-    # fracExVar_medianUnits = np.round(np.median(fracExVar_allUnits,axis=0),2)
-    # rrCorr_allUnits = np.mean()
-    # rrCorr_medianUnits = np.round(np.median(rrCorr_allUnits),2)
-
     
     idx_bestEpoch = np.nanargmax(fev_medianUnits_allEpochs)
     fev_medianUnits_bestEpoch = np.round(fev_medianUnits_allEpochs[idx_bestEpoch],2)
@@ -465,22 +362,6 @@ def run_model(expDate,mdl_name,path_model_save_base,fname_data_train_val_test,pa
     mdl.load_weights(os.path.join(path_model_save,fname_bestWeight))
     pred_rate = mdl.predict(gen,steps=int(np.ceil(data_val.X.shape[0]/bz)))
     fname_bestWeight = np.array(fname_bestWeight,dtype='bytes')
-    
-    # plt.plot(obs_rate[:,0])
-    # plt.plot(pred_rate[:,0])
-    # plt.show()
-    
-    # pred_rate_test = mdl.predict(data_test.X)
-    # obs_rate_test = data_test.y
-    # plt.plot(obs_rate_test[0:300,0])
-    # plt.plot(pred_rate_test[0:300,0])
-    # plt.show()
-    
-    # idx_start_testSamples = 500
-    # idx_len_testSamples = 240
-    # idx_testSamples = np.arange(idx_start_testSamples,idx_start_testSamples+idx_len_testSamples)
-    # corr_test_allUnits = metrics.correlation_coefficient_distribution(obs_rate_test[idx_testSamples],pred_rate_test[idx_testSamples])
-    # corr_test = np.median(corr_test_allUnits)
 
     
 # %% Save performance
@@ -489,6 +370,8 @@ def run_model(expDate,mdl_name,path_model_save_base,fname_data_train_val_test,pa
     fname_save_performance = os.path.join(path_save_model_performance,(expDate+'_'+fname_model+'.h5'))
 
     print('-----SAVING PERFORMANCE STUFF TO H5-----')
+    
+    
     model_performance = {
         'fev_medianUnits_allEpochs': fev_medianUnits_allEpochs,
         'fev_allUnits_allEpochs': fev_allUnits_allEpochs,
@@ -512,21 +395,7 @@ def run_model(expDate,mdl_name,path_model_save_base,fname_data_train_val_test,pa
         'val_loss_allEpochs': val_loss_allEpochs,
         # 'val_dataset_name': dataset_rr['stim_0']['dataset_name'],
         }
-    
-    # if mdl_name[:2] == 'PR':
-    #     weights = mdl.get_weights()
-    #     model_performance['pr_alpha'] = weights[0]
-    #     model_performance['pr_beta'] = weights[1]
-    #     model_performance['pr_gamma'] = weights[2]
-    #     model_performance['pr_tauY'] = weights[3]
-    #     model_performance['pr_tauZ'] = weights[4]
-    #     model_performance['pr_nY'] = weights[5]
-    #     model_performance['pr_nZ'] = weights[6]
-    #     model_performance['pr_tauY_mulFac'] = weights[7]
-    #     model_performance['pr_tauZ_mulFac'] = weights[8]
-    #     model_performance['pr_nY_mulFac'] = weights[9]
-    #     model_performance['pr_nZ_mulFac'] = weights[10]
-    
+        
 
     metaInfo = {
        'mdl_name': mdl.name,
@@ -562,7 +431,6 @@ def run_model(expDate,mdl_name,path_model_save_base,fname_data_train_val_test,pa
          'fname_data_train_val_test':fname_data_train_val_test,
          'n_trainingSamps': data_train.X.shape[0],
          'n_valSamps': data_val.X.shape[0],
-         # 'n_testSamps': data_test.X.shape[0],
          'temporal_width':temporal_width,
          'pr_temporal_width': pr_temporal_width
          }
@@ -579,11 +447,10 @@ def run_model(expDate,mdl_name,path_model_save_base,fname_data_train_val_test,pa
     dataset_pred = {
         'obs_rate': obs_rate,
         'pred_rate': pred_rate,
-        # 'val_dataset_name': dataset_rr['stim_0']['dataset_name'],
         }
 
     dataset_rr = None
-    save_modelPerformance(fname_save_performance,fname_model,metaInfo,data_quality,model_performance,model_params,stim_info,dataset_rr,datasets_val,dataset_pred)
+    save_modelPerformance(fname_save_performance,fname_model,metaInfo,data_quality,model_performance,model_params,stim_info,dataset_rr,datasets_val,dataset_pred)   # It would really help to have a universal h5 writing function
 
     
     

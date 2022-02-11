@@ -31,7 +31,7 @@ import numpy as np
 # mixed_precision.set_global_policy('mixed_float16')
 
 def model_definitions():
-    models_2D = ('CNN_2D','PRFR_CNN2D','PRFR_CNN2D_MULTIPR','PRFR_CNN2D_fixed','PR_CNN2D','PR_CNN2D_fixed')
+    models_2D = ('CNN_2D','PRFR_CNN2D','PRFR_CNN2D_MULTIPR','PRFR_CNN2D_fixed','PR_CNN2D','PR_CNN2D_fixed','PR_CNN2D_MULTIPR')
     models_3D = ('CNN_3D','PR_CNN3D')
     
     return (models_2D,models_3D)
@@ -145,6 +145,29 @@ class photoreceptor_DA(tf.keras.layers.Layer):
         outputs = (alpha*y_tf)/(1+(beta*z_tf))
         
         return outputs
+
+
+class Normalize_PRDA(tf.keras.layers.Layer):
+    def __init__(self,units=1):
+        super(Normalize_PRDA,self).__init__()
+        self.units = units
+        
+    def get_config(self):
+         config = super().get_config()
+         config.update({
+             "units": self.units,
+         })
+         return config   
+             
+    def call(self,inputs):
+        value_min = 0.004992888155901156 #tf.math.reduce_min(inputs)
+        value_max = 0.02672805318583508 #tf.math.reduce_max(inputs)
+        R_norm = (inputs - value_min)/(value_max-value_min)
+        R_mean = 0.5233899120505345 #tf.math.reduce_mean(R_norm)       
+        R_norm = R_norm - R_mean
+        return R_norm
+
+
 
 @tf.function(autograph=True,experimental_relax_shapes=True)
 def riekeModel(X_fun,TimeStep,sigma,phi,eta,cgmp2cur,cgmphill,cdark,beta,betaSlow,hillcoef,hillaffinity,gamma,gdark):
@@ -594,6 +617,87 @@ def pr_cnn2d(inputs,n_out,filt_temporal_width=120,chan1_n=12, filt1_size=13, cha
 
     mdl_name = 'PR_CNN2D'
     return Model(inputs, outputs, name=mdl_name)
+
+
+def pr_cnn2d_multipr(inputs,n_out,filt_temporal_width=120,chan1_n=12, filt1_size=13, chan2_n=0, filt2_size=0, chan3_n=0, filt3_size=0, BatchNorm=True, BatchNorm_train=False, MaxPool=False):
+
+    BatchNorm = bool(BatchNorm)
+    MaxPool = bool(MaxPool)
+    
+    sigma = 0.1
+    
+    # PR Channel 1
+    y1 = Reshape((inputs.shape[1],inputs.shape[-2]*inputs.shape[-1]))(inputs)
+    y1 = photoreceptor_DA(units=1)(y1)
+    y1 = Reshape((inputs.shape[1],inputs.shape[-2],inputs.shape[-1]))(y1)
+    y1 = y1[:,inputs.shape[1]-filt_temporal_width:,:,:]
+    y1 = Normalize_PRDA(units=1)(y1)
+    y1 = tf.keras.backend.expand_dims(y1,axis=-1)
+    
+    y2 = Reshape((inputs.shape[1],inputs.shape[-2]*inputs.shape[-1]))(inputs)
+    y2 = photoreceptor_DA(units=1)(y2)
+    y2 = Reshape((inputs.shape[1],inputs.shape[-2],inputs.shape[-1]))(y2)
+    y2 = y2[:,inputs.shape[1]-filt_temporal_width:,:,:]
+    y2 = Normalize_PRDA(units=1)(y2)
+    y2 = tf.keras.backend.expand_dims(y2,axis=-1)
+    
+    y = tf.keras.layers.concatenate((y1,y2), axis=-1)
+    y = Permute((4,2,3,1))(y)
+
+   
+    
+    # CNN - first layer
+    y = Conv3D(chan1_n, (filt1_size,filt1_size,filt_temporal_width), data_format="channels_first", kernel_regularizer=l2(1e-3),name='CNNs_start')(y)
+    y = tf.keras.backend.squeeze(y,-1)
+    if BatchNorm is True:
+        n1 = int(y.shape[-1])
+        n2 = int(y.shape[-2])
+        y = Reshape((chan1_n, n2, n1))(BatchNormalization(axis=-1)(Flatten()(y)))
+        # y = BatchNormalization(axis=1)(y)   
+        
+    if MaxPool is True:
+        y = MaxPool2D(2,data_format='channels_first')(y)
+
+    y = Activation('relu')(GaussianNoise(sigma)(y))
+    
+    # CNN - second layer
+    if chan2_n>0:
+        y = Conv2D(chan2_n, filt2_size, data_format="channels_first", kernel_regularizer=l2(1e-3))(y)
+        if BatchNorm is True:
+            n1 = int(y.shape[-1])
+            n2 = int(y.shape[-2])
+            y = Reshape((chan2_n, n2, n1))(BatchNormalization(axis=-1)(Flatten()(y)))
+            # y = BatchNormalization(axis=1)(y)   
+            
+        # if MaxPool is True:
+        #     y = MaxPool2D(2,data_format='channels_first')(y)
+
+        y = Activation('relu')(GaussianNoise(sigma)(y))
+
+
+    # CNN - third layer
+    if chan3_n>0:
+        y = Conv2D(chan3_n, filt3_size, data_format="channels_first", kernel_regularizer=l2(1e-3))(y)
+        if BatchNorm is True:
+            n1 = int(y.shape[-1])
+            n2 = int(y.shape[-2])
+            y = Reshape((chan3_n, n2, n1))(BatchNormalization(axis=-1)(Flatten()(y)))
+            # y = BatchNormalization(axis=1)(y)   
+        y = Activation('relu')(GaussianNoise(sigma)(y))
+
+    
+    # Dense layer
+    y = Flatten()(y)
+    if BatchNorm is True: 
+        y = BatchNormalization(axis=-1)(y)
+    y = Dense(n_out, kernel_initializer='normal', kernel_regularizer=l2(1e-3), activity_regularizer=l1(1e-3))(y)
+    outputs = Activation('softplus',dtype='float32')(y)
+
+    mdl_name = 'PR_CNN2D_MULTIPR'
+    return Model(inputs, outputs, name=mdl_name)
+
+
+
 
 def pr_cnn2d_fixed(mdl_existing,idx_CNN_start,inputs,n_out,filt_temporal_width=120,chan1_n=12, filt1_size=13, chan2_n=0, filt2_size=0, chan3_n=0, filt3_size=0, BatchNorm=True, BatchNorm_train=False, MaxPool=False):
     
