@@ -39,24 +39,31 @@ def chunker(data,batch_size,mode='default'):
 class CustomCallback(keras.callbacks.Callback):
 
     def on_epoch_end(self, epoch, logs=None):
-        
         print("LR - {}".format(self.model.optimizer.learning_rate))
 
  
 def train(mdl, data_train, data_val,fname_excel,path_model_base, fname_model, bz=588, nb_epochs=200, validation_batch_size=5000,validation_freq=10,USE_CHUNKER=0,initial_epoch=1,lr=0.001):
-    # lr = (1e-2)/10
-
-    # mdl.compile(loss='mean_squared_error', optimizer=Adam(lr), metrics=[metrics.cc, metrics.rmse, metrics.fev])
+    
+    optimizer = Adam(lr)
+    mdl.compile(loss='poisson', optimizer=optimizer, metrics=[metrics.cc, metrics.rmse, metrics.fev],experimental_run_tf_function=False)
+    
     
     if initial_epoch>1:
         try:
+            
             weight_file = 'weights_'+fname_model+'_epoch-%03d' % initial_epoch
             mdl.load_weights(os.path.join(path_model_base,weight_file))
+
         except:
             weight_file = 'weights_'+fname_model+'_epoch-%03d.h5' % initial_epoch
             mdl.load_weights(os.path.join(path_model_base,weight_file))
             
-    mdl.compile(loss='poisson', optimizer=Adam(lr), metrics=[metrics.cc, metrics.rmse, metrics.fev],experimental_run_tf_function=False)
+    else:
+        mdl.save(os.path.join(path_model_base,fname_model)) # move model architecture
+
+        # tf.keras.backend.set_value(mdl.optimizer.learning_rate, lr)
+
+            
     # mdl.compile(loss='mean_squared_error', optimizer=Adam(lr), metrics=[metrics.cc, metrics.rmse, metrics.fev],experimental_run_tf_function=False)
 
 
@@ -69,7 +76,7 @@ def train(mdl, data_train, data_val,fname_excel,path_model_base, fname_model, bz
            CustomCallback()] #
    
 
-    if USE_CHUNKER==0:
+    if USE_CHUNKER==0:  # load all data into gpu ram
         mdl_history = mdl.fit(x=data_train.X, y=data_train.y, batch_size=bz, epochs=nb_epochs,
                               callbacks=cbs, validation_data=(data_val.X,data_val.y), validation_freq=validation_freq, shuffle=True, initial_epoch=initial_epoch,use_multiprocessing=True)    # validation_batch_size=validation_batch_size,  validation_data=(data_test.X,data_test.y)   validation_data=(data_val.X,data_val.y)   validation_batch_size=math.floor(n_val)
         
@@ -92,8 +99,6 @@ def train(mdl, data_train, data_val,fname_excel,path_model_base, fname_model, bz
         f.create_dataset(keys[i], data=rgb[keys[i]])
     f.close()
     
-    
-    mdl.save(os.path.join(path_model_base,fname_model))
-    
+        
     return mdl_history
 

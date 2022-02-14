@@ -237,7 +237,6 @@ def run_model(expDate,mdl_name,path_model_save_base,fname_data_train_val_test,pa
     else:
         raise ValueError('Wrong model name')
     
-    
     path_model_save = os.path.join(path_model_save_base,mdl_name,fname_model)   # the model save directory is the fname_model appened to save path
     
     if not os.path.exists(path_model_save):
@@ -249,8 +248,18 @@ def run_model(expDate,mdl_name,path_model_save_base,fname_data_train_val_test,pa
                 
     
     fname_excel = 'performance_'+fname_model+'.csv'
-     
+        
+
     # %% Train model
+    
+    if CONTINUE_TRAINING==1:
+        try:
+            mdl = load(os.path.join(path_model_save,fname_model))
+        except:
+            pass
+        
+
+    
     gbytes_usage = get_model_memory_usage(bz, mdl)  # for PRFR layer models, this is not a good estimate.
     print('Memory required = %0.2f GB' %gbytes_usage)
     # continue a halted training: load existing model checkpoint and initial_epoch value to pass on for continuing the training
